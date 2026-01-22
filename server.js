@@ -364,6 +364,118 @@ app.get("/api/test-furiapay", async (req, res) => {
 });
 
 // ========================================
+// ARMAZENAMENTO DE REGISTROS (EM MEMÓRIA)
+// ========================================
+let registros = [];
+
+// ========================================
+// ROTA: Salvar novo registro
+// ========================================
+app.post('/api/registros', (req, res) => {
+    try {
+        const registro = {
+            id: Date.now().toString(),
+            ...req.body,
+            dataCriacao: new Date().toISOString()
+        };
+        
+        registros.push(registro);
+        
+        console.log('✅ Registro salvo:', registro.cpf);
+        console.log('📊 Total de registros:', registros.length);
+        
+        res.json({ 
+            success: true, 
+            registro,
+            total: registros.length 
+        });
+    } catch (error) {
+        console.error('❌ Erro ao salvar:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// ========================================
+// ROTA: Buscar todos os registros
+// ========================================
+app.get('/api/registros', (req, res) => {
+    console.log('📋 Listando registros:', registros.length);
+    res.json({ 
+        success: true, 
+        registros,
+        total: registros.length 
+    });
+});
+
+// ========================================
+// ROTA: Buscar registro por CPF
+// ========================================
+app.get('/api/registros/cpf/:cpf', (req, res) => {
+    const cpf = req.params.cpf.replace(/\D/g, '');
+    console.log('🔍 Buscando CPF:', cpf);
+    
+    const registro = registros.find(r => r.cpf === cpf);
+    
+    if (registro) {
+        console.log('✅ CPF encontrado:', registro.nome);
+        res.json({ success: true, registro });
+    } else {
+        console.log('❌ CPF não encontrado');
+        res.status(404).json({ 
+            success: false, 
+            error: 'CPF não encontrado' 
+        });
+    }
+});
+
+// ========================================
+// ROTA: Atualizar registro
+// ========================================
+app.put('/api/registros/:id', (req, res) => {
+    const id = req.params.id;
+    const index = registros.findIndex(r => r.id === id);
+    
+    if (index !== -1) {
+        registros[index] = { 
+            ...registros[index], 
+            ...req.body,
+            dataAtualizacao: new Date().toISOString()
+        };
+        console.log('✅ Registro atualizado:', id);
+        res.json({ success: true, registro: registros[index] });
+    } else {
+        console.log('❌ Registro não encontrado:', id);
+        res.status(404).json({ 
+            success: false, 
+            error: 'Registro não encontrado' 
+        });
+    }
+});
+
+// ========================================
+// ROTA: Deletar registro
+// ========================================
+app.delete('/api/registros/:id', (req, res) => {
+    const id = req.params.id;
+    const antes = registros.length;
+    registros = registros.filter(r => r.id !== id);
+    
+    if (registros.length < antes) {
+        console.log('✅ Registro deletado:', id);
+        res.json({ success: true, message: 'Registro deletado' });
+    } else {
+        console.log('❌ Registro não encontrado:', id);
+        res.status(404).json({ 
+            success: false, 
+            error: 'Registro não encontrado' 
+        });
+    }
+});
+
+// ========================================
 // 🚀 INICIAR SERVIDOR
 // ========================================
 const PORT = process.env.PORT || 3000;
